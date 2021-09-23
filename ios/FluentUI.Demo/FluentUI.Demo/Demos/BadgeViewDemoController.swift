@@ -16,10 +16,12 @@ class BadgeViewDemoController: DemoController {
         addBadgeSection(title: "Disabled badge", style: .default, isEnabled: false)
         addBadgeSection(title: "Custom badge", style: .default, overrideColor: true)
         addBadgeSection(title: "Custom disabled badge", style: .default, isEnabled: false, overrideColor: true)
+
+		addAvatarBadgeSection(title: "Avatar badge")
     }
 
-    func createBadge(text: String, style: BadgeView.Style, size: BadgeView.Size, isEnabled: Bool) -> BadgeView {
-        let badge = BadgeView(dataSource: BadgeViewDataSource(text: text, style: style, size: size))
+	func createBadge(text: String, style: BadgeView.Style, size: BadgeView.Size, isEnabled: Bool, avatar: MSFAvatar? = nil) -> BadgeView {
+		let badge = BadgeView(dataSource: BadgeViewDataSource(text: text, style: style, size: size, avatar: avatar))
         badge.delegate = self
         badge.isActive = isEnabled
         return badge
@@ -44,6 +46,22 @@ class BadgeViewDemoController: DemoController {
         }
         container.addArrangedSubview(UIView())
     }
+	
+	func addAvatarBadgeSection(title: String) {
+		addTitle(text: title)
+		for size in BadgeView.Size.allCases.reversed() {
+			let avatar = MSFAvatar(style: .default, size: .xsmall)
+			avatar.state.image = UIImage(named: "avatar_kat_larsson")
+
+			let badge = createBadge(text: "Kat Larrson", style: .default, size: size, isEnabled: false, avatar: avatar)
+			
+			badge.disabledBackgroundColor = Colors.Palette.green20.color
+			badge.disabledLabelTextColor = .white
+
+			addRow(text: size.description, items: [badge])
+		}
+		container.addArrangedSubview(UIView())
+	}
 }
 
 extension BadgeViewDemoController: BadgeViewDelegate {

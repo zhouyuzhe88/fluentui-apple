@@ -11,11 +11,14 @@ open class BadgeViewDataSource: NSObject {
     @objc open var text: String
     @objc open var style: BadgeView.Style
     @objc open var size: BadgeView.Size
+	@objc open var avatar: MSFAvatar?
 
-    @objc public init(text: String, style: BadgeView.Style = .default, size: BadgeView.Size = .medium) {
+    @objc public init(text: String, style: BadgeView.Style = .default, size: BadgeView.Size = .medium, avatar: MSFAvatar? = nil) {
         self.text = text
         self.style = style
         self.size = size
+		self.avatar = avatar
+		self.avatar?.state.size = size.avatarSize
         super.init()
     }
 }
@@ -93,10 +96,32 @@ open class BadgeView: UIView {
                 return 4
             }
         }
+		
+		var verticalPaddingWithAvatar: CGFloat {
+			switch self {
+			case .small:
+				return 4
+			case .medium:
+				return 4
+			}
+		}
+		
+		var avatarSize: MSFAvatarSize {
+			switch self {
+			case .small:
+				return .xsmall
+			case .medium:
+				return .small
+			}
+		}
 
         var height: CGFloat {
             return verticalPadding + labelTextStyle.font.deviceLineHeight + verticalPadding
         }
+		
+		var heightWithAvatar: CGFloat {
+			return verticalPaddingWithAvatar + max(labelTextStyle.font.deviceLineHeight, avatarSize.size) + verticalPaddingWithAvatar
+		}
     }
 
     private struct Constants {
@@ -304,6 +329,10 @@ open class BadgeView: UIView {
         label.textAlignment = .center
         label.backgroundColor = .clear
         addSubview(label)
+		
+		if let avatar = dataSource.avatar {
+			addSubview(avatar.view)
+		}
 
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(badgeTapped))
         addGestureRecognizer(tapGesture)
@@ -331,11 +360,18 @@ open class BadgeView: UIView {
         let labelHeight = label.font.deviceLineHeight
         let labelSize = label.sizeThatFits(CGSize(width: CGFloat.infinity, height: CGFloat.infinity))
         let fittingLabelWidth = UIScreen.main.roundToDevicePixels(labelSize.width)
+		
+		var lableX = size.horizontalPadding
+		if let avatar = dataSource?.avatar {
+			let avatarSize = avatar.state.size.size
+			lableX += avatarSize + size.horizontalPadding
+			avatar.view.frame = CGRect(x: size.horizontalPadding, y: (frame.height - avatarSize) / 2, width: avatarSize, height: avatarSize)
+		}
 
         let minLabelWidth = minWidth - size.horizontalPadding * 2
         let maxLabelWidth = frame.width - size.horizontalPadding * 2
         let labelWidth = max(minLabelWidth, min(maxLabelWidth, fittingLabelWidth))
-        label.frame = CGRect(x: size.horizontalPadding, y: size.verticalPadding, width: labelWidth, height: labelHeight)
+		label.frame = CGRect(x: lableX, y: (frame.height - labelHeight) / 2, width: labelWidth, height: labelHeight)
     }
 
     open func reload() {
@@ -347,9 +383,12 @@ open class BadgeView: UIView {
 
     open override func sizeThatFits(_ size: CGSize) -> CGSize {
         let labelSize = label.sizeThatFits(CGSize(width: CGFloat.infinity, height: CGFloat.infinity))
-        let width = UIScreen.main.roundToDevicePixels(labelSize.width) + self.size.horizontalPadding * 2
+        var width = UIScreen.main.roundToDevicePixels(labelSize.width) + self.size.horizontalPadding * 2
+		if let avatar = dataSource?.avatar {
+			width += avatar.state.size.size + self.size.horizontalPadding
+		}
         let maxWidth = size.width > 0 ? size.width : .infinity
-        return CGSize(width: max(minWidth, min(width, maxWidth)), height: self.size.height)
+		return CGSize(width: max(minWidth, min(width, maxWidth)), height: dataSource?.avatar == nil ? self.size.height : self.size.heightWithAvatar)
     }
 
     open override func didMoveToWindow() {
