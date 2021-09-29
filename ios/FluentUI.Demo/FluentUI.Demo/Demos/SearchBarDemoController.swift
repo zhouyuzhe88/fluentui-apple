@@ -7,6 +7,21 @@ import FluentUI
 import UIKit
 
 class SearchBarDemoController: DemoController, SearchBarDelegate {
+	private lazy var searchBarAutocorrectWithBadgeView: SearchBar = buildSearchBar(
+		autocorrectionType: .yes,
+		placeholderText: "Type badge to add a badge"
+	)
+	
+	private lazy var badgeView: BadgeView = {
+		let avatar = MSFAvatar(style: .default, size: .xsmall)
+		avatar.state.image = UIImage(named: "avatar_kat_larsson")
+		let badge = BadgeView(dataSource: BadgeViewDataSource(text: "Kat Larrson", style: .default, size: .small, avatar: avatar))
+		badge.disabledBackgroundColor = Colors.Palette.green20.color
+		badge.disabledLabelTextColor = .white
+		badge.isActive = false
+		return badge
+	}()
+	
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -15,6 +30,9 @@ class SearchBarDemoController: DemoController, SearchBarDelegate {
 
         container.addArrangedSubview(searchBarNoAutocorrect)
         container.addArrangedSubview(searchBarAutocorrect)
+		
+		searchBarAutocorrectWithBadgeView.badgeView = badgeView
+		container.addArrangedSubview(searchBarAutocorrectWithBadgeView)
     }
 
     func buildSearchBar(autocorrectionType: UITextAutocorrectionType, placeholderText: String) -> SearchBar {
@@ -33,7 +51,12 @@ class SearchBarDemoController: DemoController, SearchBarDelegate {
     }
 
     func searchBar(_ searchBar: SearchBar, didUpdateSearchText newSearchText: String?) {
-        searchBar.placeholderText = newSearchText ?? "search"
+		if searchBar != searchBarAutocorrectWithBadgeView {
+			searchBar.placeholderText = newSearchText ?? "search"
+		} else if searchBar.searchText?.lowercased() == "badge" && searchBarAutocorrectWithBadgeView.badgeView == nil {
+			searchBarAutocorrectWithBadgeView.badgeView = badgeView
+			searchBar.searchText = ""
+		}
     }
 
     func searchBarDidFinishEditing(_ searchBar: SearchBar) {
