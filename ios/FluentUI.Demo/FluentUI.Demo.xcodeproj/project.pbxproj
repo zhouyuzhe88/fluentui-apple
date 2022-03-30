@@ -238,6 +238,7 @@
 				A5CEC22920E44FBF0016922A /* Frameworks */,
 			);
 			sourceTree = "<group>";
+			usesTabs = 0;
 		};
 		A5CEC20D20E436F10016922A /* Products */ = {
 			isa = PBXGroup;

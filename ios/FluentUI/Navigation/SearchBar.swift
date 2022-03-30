@@ -186,6 +186,7 @@ open class SearchBar: UIView {
     private var searchTextFieldBackgroundViewTrailingConstraint: NSLayoutConstraint?
     private var cancelButtonTrailingConstraint: NSLayoutConstraint?
     private var textFieldLeadingConstraint: NSLayoutConstraint?
+    private var leadingViewWidthConstraint: NSLayoutConstraint?
 
     private lazy var searchIconImageViewContainerView = UIView()
 
@@ -264,6 +265,16 @@ open class SearchBar: UIView {
             setupLayoutForLeadingView()
             onContentChanged()
             delegate?.searchBar?(self, didUpdateLeadingView: leadingView)
+        }
+    }
+
+    @objc public var leadingViewMaxWidthRatio: CGFloat = 1 {
+        didSet {
+            guard let leadingView = leadingView else {
+                return
+            }
+            let leadingViewSize = size(for: leadingView)
+            leadingViewWidthConstraint?.constant = leadingViewSize.width
         }
     }
 
@@ -453,16 +464,25 @@ open class SearchBar: UIView {
         }
 
         searchTextFieldBackgroundView.addSubview(leadingView)
-        let leadingViewSize = leadingView.sizeThatFits(searchTextFieldBackgroundView.frame.size)
+        let leadingViewSize = size(for: leadingView)
         leadingView.translatesAutoresizingMaskIntoConstraints = false
 
-        NSLayoutConstraint.activate([
+        let constraints = [
             leadingView.leadingAnchor.constraint(equalTo: searchIconImageViewContainerView.trailingAnchor, constant: Constants.searchIconInset),
             leadingView.trailingAnchor.constraint(equalTo: searchTextField.leadingAnchor, constant: -Constants.searchTextFieldLeadingInset),
             leadingView.centerYAnchor.constraint(equalTo: searchTextFieldBackgroundView.centerYAnchor),
-            leadingView.widthAnchor.constraint(equalToConstant: leadingViewSize.width),
-            leadingView.heightAnchor.constraint(equalToConstant: leadingViewSize.height)
-        ])
+            leadingView.heightAnchor.constraint(equalToConstant: leadingViewSize.height),
+            leadingView.widthAnchor.constraint(equalToConstant: leadingViewSize.width)
+        ]
+        NSLayoutConstraint.activate(constraints)
+        leadingViewWidthConstraint = constraints.last
+    }
+
+    private func size(for leadingView: UIView) -> CGSize {
+        let containerSize = searchTextFieldBackgroundView.frame.size
+        let limitedWidth = min(containerSize.width * leadingViewMaxWidthRatio, containerSize.width)
+        let limitedSize = CGSize(width: limitedWidth, height: containerSize.height)
+        return leadingView.sizeThatFits(limitedSize)
     }
 
     private func updateColorsForStyle() {
