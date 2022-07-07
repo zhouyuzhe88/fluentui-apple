@@ -5,6 +5,8 @@
 
 import FluentUI
 import UIKit
+import NaturalLanguage
+import Foundation
 
 // MARK: TableViewCellDemoController
 
@@ -123,9 +125,7 @@ extension TableViewCellDemoController {
         let item = section.item
         if section.title == "Inverted double line cell" {
             cell.setup(
-                attributedTitle: NSAttributedString(string: item.text1,
-                                                    attributes: [.font: TextStyle.footnote.font,
-                                                                 .foregroundColor: Colors.Table.Cell.footer]),
+                attributedTitle: item.text1.attributedTitle(with: "sur"),
                 attributedSubtitle: NSAttributedString(string: item.text2,
                                                        attributes: [.font: TextStyle.body.font,
                                                                     .foregroundColor: Colors.Table.Cell.title]),
@@ -208,5 +208,44 @@ extension TableViewCellDemoController {
         let action = UIAlertAction(title: "OK", style: .default)
         alert.addAction(action)
         present(alert, animated: true)
+    }
+}
+
+extension String {
+    func attributedTitle(with queryString: String) -> NSAttributedString? {
+        let hightlightRange = hightlightRangesOf(queryString: queryString)
+
+        guard let fontDescriptor = TextStyle.body.font.fontDescriptor.withSymbolicTraits(.traitBold) else {
+            return nil
+        }
+
+		return hightlightRange.reduce(NSMutableAttributedString(string: self)) { partialResult, range in
+            partialResult.addAttribute(.font, value: UIFont(descriptor: fontDescriptor, size: 0), range: range)
+            return partialResult
+        }
+    }
+
+    private func tokenize () -> [Substring] {
+        let tokenizer = NLTokenizer(unit: .word)
+        tokenizer.string = self
+        return tokenizer.tokens(for: self.startIndex..<self.endIndex).map { self[$0] }
+    }
+
+    private func allRangesOf(substring: Substring) -> [NSRange] {
+        var ranges = [NSRange]()
+        var searchStartIndex = self.startIndex
+
+        while searchStartIndex < self.endIndex, let range = self.range(of: substring, options: .caseInsensitive, range: searchStartIndex..<self.endIndex), !range.isEmpty {
+            ranges.append(NSRange(location: distance(from: self.startIndex, to: range.lowerBound), length: substring.count))
+            searchStartIndex = range.upperBound
+        }
+
+        return ranges
+    }
+
+    private func hightlightRangesOf(queryString: String) -> [NSRange] {
+        return queryString.tokenize().reduce([NSRange]()) { partialResult, token in
+            return partialResult + allRangesOf(substring: token)
+        }
     }
 }
